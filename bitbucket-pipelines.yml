@@ -1,0 +1,25 @@
+image: maven:3.6.3
+
+pipelines:
+  default:
+    - step:
+        name: Build Spring Boot JAR
+        caches:
+          - maven
+        script:
+          - mvn -B clean package
+        artifacts:
+          - target/*.jar
+    - step:
+        name: Upload to Downloads
+        deployment: production
+        script:
+          - PIPELINE_ID=$(date +%s)
+          - JAR_FILE=$(find target -name "*.jar" | head -n 1)
+          - JAR_NAME=$(basename $JAR_FILE)
+          - echo "Uploading $JAR_NAME to Downloads..."
+          - curl -u $BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD -X POST "https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_OWNER/$BITBUCKET_REPO_SLUG/downloads" --form files=@"$JAR_FILE"
+
+definitions:
+  caches:
+    maven: ~/.m2/repository
